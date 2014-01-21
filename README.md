@@ -1,6 +1,6 @@
 # one-route
 
-A simple Clojure demonstrating the use of Ring, Compojure, HTML, JavaScript with Jquery to setup a minimalistic Ajax Webapp + matching Rest Services.
+A simple Clojure demonstrating the use of Ring, Compojure, HTML and JavaScript with Jquery to setup a minimalistic Ajax Webapp + matching Rest Services.
 
 It contains 3 routes (or rest service entry points):
 
@@ -9,6 +9,8 @@ It contains 3 routes (or rest service entry points):
     DELETE  ->    /entry
 
 They respectively get, add or delete a user of the system. There is no database. The data is a simple hashmap held inside an Atom.
+
+The main HTML page (http://localhost:8070/) contains a form which calls the 3 REST entry points (see above). The REST calls are managed by JavaScript with JQuery.
 
 ## Usage
 
@@ -24,6 +26,10 @@ They respectively get, add or delete a user of the system. There is no database.
 
     (use 'one-route.core :reload)
     (def server (start-server))
+    
+### Connect onto the server:
+
+    copy and paste http://localhost:8070/ into your browser
 
 ### Stop the server (in repl):
 
