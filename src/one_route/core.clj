@@ -15,7 +15,8 @@
 (defroutes api
   (GET "/" [] (slurp "resources/public/html/index.html"))
   (GET "/entry/:name" [name] (response (filter (fn [{n :name}] (= n name )) @user-table)))
-  (PUT "/entry" {newuser :body} (response (do (println newuser) (swap! user-table (fn [u] (conj u newuser))) @user-table)))
+  (DELETE "/entry" {{name :name} :body} (response (do (println "delete" name) (swap! user-table (fn [u] (filter (fn [{n :name}] (not (= n name))) u))) @user-table)))
+  (PUT "/entry" {newuser :body} (response (do (println "added" newuser) (swap! user-table (fn [u] (conj u newuser))) @user-table)))
   (c-route/resources "/"))
 
 ;;
