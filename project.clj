@@ -7,6 +7,7 @@
                  [ring "1.2.0"]
                  [ring-server "0.2.8" :exclusions [[org.clojure/clojure]
                                                    [ring]]]
+                 [com.novemberain/monger "1.7.0"]
                  [ring/ring-json "0.2.0"]
                  [compojure "1.1.5" :exclusions [[org.clojure/clojure] [ring/ring-core]]]]
   :local-repo "lib")
