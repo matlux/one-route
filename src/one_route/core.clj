@@ -9,9 +9,21 @@
             [ring.server.standalone :as server]
             [ring.middleware.json :as ring-json]))
 
-(defroutes api
+(def json {:a [1,
+               2,
+               3,
+               4,
+               {:b "myvalue"}]})
+
+(def db (atom [{:name "steve" :email "steves@mail.com"}
+               {:name "mike" :email "mike@gmail.com"}]))
+
+
+(defroutes  api
   (GET "/" [] (slurp "resources/public/html/index.html"))
-  (GET "/health" [] (response {:health "green"}))
+  (GET "/health" [name] (response @db))
+  (GET "/entry/:query" [query] (response (filter #(= (:name %) query)@db)))
+  (PUT "/entry" {user :body} (response (do (swap! db conj user))))
   (c-route/resources "/"))
 
 (def app
@@ -25,3 +37,7 @@
   (server/serve #'app {:port 8070
                        :join? false
                        :open-browser? false}))
+
+;;(def server (start-server))
+(for [{n :name :as user} @db
+      :when (= n "steve")] user)
