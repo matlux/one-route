@@ -28,6 +28,17 @@
 
             })
         }
+        function deleteEntry() {
+            $.ajax({
+                url: '/delete/entry',
+                data: JSON.stringify({name: $('#addName').val(), email: $('#addEmail').val()}),
+                        contentType: 'application/json',
+        type: 'DELETE',
+        success: function(data) { $('#addEntryResult').text(JSON.stringify(data)); },
+	error: function(jqXHR, textStatus, errorThrown) { $('#addEntryResult').text(textStatus + " " + errorThrown); }
+
+            })
+        }
     </script>
 </head>
 <body>
@@ -56,6 +67,7 @@
                     <input id="addEmail" name="name" type="text" class="form-control" placeholder="Email address">
                 </div>
                 <button type="submit" onclick="addEntry();" class="btn btn-success">Add</button>
+                <button type="submit" onclick="deleteEntry();" class="btn btn-success">Delete</button>
             </form>
             <hr/>
             <pre id="addEntryResult"></pre>

@@ -24,6 +24,7 @@
   (GET "/health" [name] (response @db))
   (GET "/entry/:query" [query] (response (filter #(= (:name %) query)@db)))
   (PUT "/entry" {user :body} (response (do (swap! db conj user))))
+  (DELETE "/delete/entry" {{name :name} :body} (response (swap! db (fn [db] (filter #(not= (:name %) name) db)))))
   (c-route/resources "/"))
 
 (def app
