@@ -30,13 +30,24 @@
   ;;                           {:_id "mike" :email "mike@gmail.com"}])
   )
 
+(defn lookup [user]
+  (into {} (mc/find-one "users" { :_id user })))
+
+
+(defn create-user [user]
+  (into {}  (do (dbg (mc/insert "users" user)) {:status "ok"})))
+
+(defn delete-user [user])
+
+(defn delete-user [id]
+  (do (mc/remove "users" { :_id id }) {:status "ok"}))
 
 (defroutes  api
   (GET "/" [] (slurp "resources/public/html/index.html"))
   (GET "/health" [name] (mc/find-maps "users"))
-  (GET "/entry/:query" [query] (response (into {} (mc/find-one "users" { :_id query }))))
-  (PUT "/entry" {user :body} (response (into {}  (do (dbg (mc/insert "users" user)) {:status "ok"})) ))
-  (DELETE "/delete/entry" {{name :_id} :body} (response (do (mc/remove "users" { :_id name }) {:status "ok"}) ))
+  (GET "/entry/:query" [query] (response (lookup query)))
+  (PUT "/entry" {user :body} (response (create-user user)))
+  (DELETE "/delete/entry" {{name :_id} :body} (response (delete-user name)))
   (c-route/resources "/"))
 
 (def app
