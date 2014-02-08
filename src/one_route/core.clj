@@ -13,7 +13,8 @@
             [monger.collection :as mc]
             [cemerick.friend :as friend]
             (cemerick.friend [workflows :as workflows]
-                             [credentials :as creds])
+                             [credentials :as creds]
+                             [openid :as openid])
             [hiccup.page :as h]
             [hiccup.element :as e]
             [one-route.misc :as misc]
@@ -116,6 +117,86 @@
    [:h3 "Logging out"]
    [:p (e/link-to (misc/context-uri req "logout") "Click here to log out") "."])))
 
+
+
+(def providers [{:name "Google" :url "https://www.google.com/accounts/o8/id"}
+                {:name "Yahoo" :url "http://me.yahoo.com/"}
+                {:name "AOL" :url "http://openid.aol.com/"}
+                {:name "Wordpress.com" :url "http://username.wordpress.com"}
+                {:name "MyOpenID" :url "http://username.myopenid.com/"}])
+
+(defroutes routes
+  (GET "/" req
+    (h/html5
+      misc/pretty-head
+      (misc/pretty-body
+
+        [:h2 "Authenticating with various services using OpenID"]
+        [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
+        (if-let [auth (friend/current-authentication req)]
+          [:p "Some information delivered by your OpenID provider:"
+           [:ul (for [[k v] auth
+                      :let [[k v] (if (= :identity k)
+                                    ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
+                                    [k v])]]
+                  [:li [:strong (str (name k) ": ")] v])]]
+          [:div
+           [:h3 "Login with…"]
+           (for [{:keys [name url]} providers
+                 :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
+                       dom-id (str (gensym))]]
+             [:form {:method "POST" :action (misc/context-uri req "login")
+                     :onsubmit (when (.contains ^String url "username")
+                                 (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
+                                   (str \' dom-id \') name))}
+               [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
+               [:input {:type "submit" :class "button" :value name}]])
+           [:p "…or, with a user-provided OpenID URL:"]
+           [:form {:method "POST" :action (misc/context-uri req "login")}
+            [:input {:type "text" :name "identifier" :style "width:250px;"}]
+            [:input {:type "submit" :class "button" :value "Login"}]]])
+        [:h3 "Logging out"]
+        [:p [:a {:href (misc/context-uri req "logout")} "Click here to log out"] "."])))
+  (GET "/logout" req
+    (friend/logout* (resp/redirect (str (:context req) "/")))))
+
+
+(defn home-page-openid [req]
+
+  (h/html5
+   misc/pretty-head
+   (misc/pretty-body
+
+    [:h2 "Authenticating with various services using OpenID"]
+    [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
+    (if-let [auth (friend/current-authentication req)]
+      [:p "Some information delivered by your OpenID provider:"
+       [:ul (for [[k v] auth
+                  :let [[k v] (if (= :identity k)
+                                ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
+                                [k v])]]
+              [:li [:strong (str (name k) ": ")] v])]]
+      [:div
+       [:h3 "Login with…"]
+       (for [{:keys [name url]} providers
+             :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
+                   dom-id (str (gensym))]]
+         [:form {:method "POST" :action (misc/context-uri req "login")
+                 :onsubmit (when (.contains ^String url "username")
+                             (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
+                                     (str \' dom-id \') name))}
+          [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
+          [:input {:type "submit" :class "button" :value name}]])
+       [:p "…or, with a user-provided OpenID URL:"]
+       [:form {:method "POST" :action (misc/context-uri req "login")}
+        [:input {:type "text" :name "identifier" :style "width:250px;"}]
+        [:input {:type "submit" :class "button" :value "Login"}]]])
+    [:h3 "Logging out"]
+    [:p [:a {:href (misc/context-uri req "logout")} "Click here to log out"] "."]))
+  (GET "/logout" req
+    (friend/logout* (resp/redirect (str (:context req) "/")))))
+
+
 ;;(slurp "resources/public/html/index.html")
 (defroutes  api
   (GET "/" req (friend/authorize #{::user} (home-page req)))
@@ -151,15 +232,17 @@
 (def app
   (->
    (friend/authenticate
-              api
+              routes
               {:allow-anon? true
-               :login-uri "/login"
+               ;;:login-uri "/login"
                :default-landing-uri "/"
-               :unauthorized-handler #(-> (h/html5 [:h2 "You do not have sufficient privileges to access " (:uri %)])
-                                        resp/response
-                                        (resp/status 401))
+               ;; :unauthorized-handler #(-> (h/html5 [:h2 "You do not have sufficient privileges to access " (:uri %)])
+               ;;                          resp/response
+               ;;                          (resp/status 401))
                :credential-fn #(creds/bcrypt-credential-fn users %)
-               :workflows [(workflows/interactive-form)]})
+               :workflows [(openid/workflow
+                             :openid-uri "/login"
+                             :credential-fn identity)]})
       (handler/site)
       (wrap-reload '(one-route.core))
       (ring-json/wrap-json-body {:keywords? true})
