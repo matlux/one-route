@@ -8,6 +8,8 @@
                  [ring-server "0.2.8" :exclusions [[org.clojure/clojure]
                                                    [ring]]]
                  [com.novemberain/monger "1.7.0"]
+                 [com.cemerick/friend "0.2.0"]
                  [ring/ring-json "0.2.0"]
-                 [compojure "1.1.5" :exclusions [[org.clojure/clojure] [ring/ring-core]]]]
+                 [compojure "1.1.5" :exclusions [[org.clojure/clojure] [ring/ring-core]]]
+                 [org.webjars/foundation "4.0.4"]]
   :local-repo "lib")
