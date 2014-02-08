@@ -59,12 +59,15 @@
 
 (def login-form
   [:div {:class "row"}
-   [:div {:class "columns small-12"}
-    [:h3 "Login"]
-    [:div {:class "row"}
-     [:form {:method "POST" :action "login" :class "columns small-4"}
-      [:div "Username" [:input {:type "text" :name "username"}]]
-      [:div "Password" [:input {:type "password" :name "password"}]]
+   [:div {:class "col-lg-10 col-lg-offset-0"}
+    [:div {:class "panel"}
+     [:h3 "Login:"]
+
+
+
+     [:form {:method "POST" :action "login" :class "form-inline"}
+      [:div "Username" [:input {:type "text" :name "username" :class "form-control"}]]
+      [:div "Password" [:input {:type "password" :name "password" :class "form-control"}]]
       [:div [:input {:type "submit" :class "button" :value "Login"}]]]]]])
 
 (defroutes user-routes
@@ -72,10 +75,50 @@
 )
 
 
+(defn home-page [req] (h/html5
+  misc/pretty-head
+  (misc/pretty-body
+
+   [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
+   [:p (if-let [identity (friend/identity req)]
+         (apply str "Logged in, with these roles: "
+                (-> identity friend/current-authentication :roles))
+         "anonymous user")]
+   login-form
+   [:h3 "Authorization demos"]
+   [:h1 "Address book"]
+   [:h2 "Lookup"]
+   [:form {:id "lookupForm" :class "form-inline" :onsubmit "return false;"}
+    [:div [:input {:id "lookupName" :type "text" :class "form-control" :placeholder "Name"}]
+     [:button {:type "submit" :onclick "lookupEntry();" :class "btn btn-success"} "Lookup"]]]
+   [:hr]
+   [:pre {:id "lookupEntryResult"}]
+
+   [:h2 "Add entry"]
+   [:form {:id "addForm" :class "form-inline" :onsubmit "return false;"}
+    [:div [:input {:id "addName" :type "text" :class "form-control" :placeholder "Name"}]]
+    [:div [:input {:id "addEmail" :type "text" :class "form-control" :placeholder "Email address"}]]
+    [:button {:type "submit" :onclick "addEntry();" :class "btn btn-success"} "Add"]
+    [:button {:type "submit" :onclick "deleteEntry();" :class "btn btn-failure"} "Delete"]
+    ]
+   [:hr]
+   [:pre {:id "addEntryResult"}]
 
 
+   [:p "Each of these links require particular roles (or, any authentication) to access. "
+    "If you're not authenticated, you will be redirected to a dedicated login page. "
+    "If you're already authenticated, but do not meet the authorization requirements "
+    "(e.g. you don't have the proper role), then you'll get an Unauthorized HTTP response."]
+   [:ul [:li (e/link-to (misc/context-uri req "role-user") "Requires the `user` role")]
+    [:li (e/link-to (misc/context-uri req "role-admin") "Requires the `admin` role")]
+    [:li (e/link-to (misc/context-uri req "requires-authentication")
+                    "Requires any authentication, no specific role requirement")]]
+   [:h3 "Logging out"]
+   [:p (e/link-to (misc/context-uri req "logout") "Click here to log out") "."])))
+
+;;(slurp "resources/public/html/index.html")
 (defroutes  api
-  (GET "/" [] (friend/authorize #{::user} (slurp "resources/public/html/index.html")))
+  (GET "/" req (friend/authorize #{::user} (home-page req)))
 
   (GET "/health" [name] (mc/find-maps "users"))
   (GET "/entry/:username" [username]
@@ -94,7 +137,8 @@
        (friend/authorize #{::user} "You're a user!"))
   (GET "/role-admin" req
        (friend/authorize #{::admin} "You're an admin!"))
-  (c-route/resources "/" {:root "META-INF/resources/webjars/foundation/4.0.4/"})
+  (c-route/resources "/"; {:root "META-INF/resources/webjars/foundation/4.0.4/"}
+                     )
   ;; (c-core/context "/user" request
   ;;    (friend/wrap-authorize user-routes #{::user ::admin}))
 
