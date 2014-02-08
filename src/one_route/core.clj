@@ -75,6 +75,72 @@
   (GET "/entry/:query" [query] (response (lookup query)))
 )
 
+(def providers [{:name "Google" :url "https://www.google.com/accounts/o8/id"}
+                {:name "Yahoo" :url "http://me.yahoo.com/"}
+                {:name "AOL" :url "http://openid.aol.com/"}
+                {:name "Wordpress.com" :url "http://username.wordpress.com"}
+                {:name "MyOpenID" :url "http://username.myopenid.com/"}])
+
+
+(defn openid-info [req]
+  [:div {:class "row"}
+   [:h2 "Authenticating with various services using OpenID"]
+    [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
+    (if-let [auth (friend/current-authentication req)]
+      [:p "Some information delivered by your OpenID provider:"
+       [:ul (for [[k v] auth
+                  :let [[k v] (if (= :identity k)
+                                ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
+                                [k v])]]
+              [:li [:strong (str (name k) ": ")] v])]]
+      [:div
+       [:h3 "Login with…"]
+       (for [{:keys [name url]} providers
+             :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
+                   dom-id (str (gensym))]]
+         [:form {:method "POST" :action (misc/context-uri req "login")
+                 :onsubmit (when (.contains ^String url "username")
+                             (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
+                                     (str \' dom-id \') name))}
+          [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
+          [:input {:type "submit" :class "button" :value name}]])
+       [:p "…or, with a user-provided OpenID URL:"]
+       [:form {:method "POST" :action (misc/context-uri req "login")}
+        [:input {:type "text" :name "identifier" :style "width:250px;"}]
+        [:input {:type "submit" :class "button" :value "Login"}]]])])
+
+(defn home-page-openid [req]
+  (h/html5
+   misc/pretty-head
+   (misc/pretty-body
+    [:h2 "Authenticating with various services using OpenID"]
+    [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
+    (if-let [auth (friend/current-authentication req)]
+      [:p "Some information delivered by your OpenID provider:"
+       [:ul (for [[k v] auth
+                  :let [[k v] (if (= :identity k)
+                                ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
+                                [k v])]]
+              [:li [:strong (str (name k) ": ")] v])]]
+      [:div
+       [:h3 "Login with…"]
+       (for [{:keys [name url]} providers
+             :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
+                   dom-id (str (gensym))]]
+         [:form {:method "POST" :action (misc/context-uri req "login")
+                 :onsubmit (when (.contains ^String url "username")
+                             (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
+                                     (str \' dom-id \') name))}
+          [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
+          [:input {:type "submit" :class "button" :value name}]])
+       [:p "…or, with a user-provided OpenID URL:"]
+       [:form {:method "POST" :action (misc/context-uri req "login")}
+        [:input {:type "text" :name "identifier" :style "width:250px;"}]
+        [:input {:type "submit" :class "button" :value "Login"}]]])
+    [:h3 "Logging out"]
+    [:p [:a {:href (misc/context-uri req "logout")} "Click here to log out"] "."]))
+  )
+
 
 (defn home-page [req] (h/html5
   misc/pretty-head
@@ -85,7 +151,7 @@
          (apply str "Logged in, with these roles: "
                 (-> identity friend/current-authentication :roles))
          "anonymous user")]
-   login-form
+   (openid-info req)
    [:h3 "Authorization demos"]
    [:h1 "Address book"]
    [:h2 "Lookup"]
@@ -119,107 +185,44 @@
 
 
 
-(def providers [{:name "Google" :url "https://www.google.com/accounts/o8/id"}
-                {:name "Yahoo" :url "http://me.yahoo.com/"}
-                {:name "AOL" :url "http://openid.aol.com/"}
-                {:name "Wordpress.com" :url "http://username.wordpress.com"}
-                {:name "MyOpenID" :url "http://username.myopenid.com/"}])
-
 (defroutes routes
   (GET "/" req
-    (h/html5
-      misc/pretty-head
-      (misc/pretty-body
-
-        [:h2 "Authenticating with various services using OpenID"]
-        [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
-        (if-let [auth (friend/current-authentication req)]
-          [:p "Some information delivered by your OpenID provider:"
-           [:ul (for [[k v] auth
-                      :let [[k v] (if (= :identity k)
-                                    ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
-                                    [k v])]]
-                  [:li [:strong (str (name k) ": ")] v])]]
-          [:div
-           [:h3 "Login with…"]
-           (for [{:keys [name url]} providers
-                 :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
-                       dom-id (str (gensym))]]
-             [:form {:method "POST" :action (misc/context-uri req "login")
-                     :onsubmit (when (.contains ^String url "username")
-                                 (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
-                                   (str \' dom-id \') name))}
-               [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
-               [:input {:type "submit" :class "button" :value name}]])
-           [:p "…or, with a user-provided OpenID URL:"]
-           [:form {:method "POST" :action (misc/context-uri req "login")}
-            [:input {:type "text" :name "identifier" :style "width:250px;"}]
-            [:input {:type "submit" :class "button" :value "Login"}]]])
-        [:h3 "Logging out"]
-        [:p [:a {:href (misc/context-uri req "logout")} "Click here to log out"] "."])))
+    (home-page-openid req))
   (GET "/logout" req
     (friend/logout* (resp/redirect (str (:context req) "/")))))
 
 
-(defn home-page-openid [req]
 
-  (h/html5
-   misc/pretty-head
-   (misc/pretty-body
-
-    [:h2 "Authenticating with various services using OpenID"]
-    [:h3 "Current Status " [:small "(this will change when you log in/out)"]]
-    (if-let [auth (friend/current-authentication req)]
-      [:p "Some information delivered by your OpenID provider:"
-       [:ul (for [[k v] auth
-                  :let [[k v] (if (= :identity k)
-                                ["Your OpenID identity" (str (subs v 0 (* (count v) 2/3)) "…")]
-                                [k v])]]
-              [:li [:strong (str (name k) ": ")] v])]]
-      [:div
-       [:h3 "Login with…"]
-       (for [{:keys [name url]} providers
-             :let [base-login-url (misc/context-uri req (str "/login?identifier=" url))
-                   dom-id (str (gensym))]]
-         [:form {:method "POST" :action (misc/context-uri req "login")
-                 :onsubmit (when (.contains ^String url "username")
-                             (format "var input = document.getElementById(%s); input.value = input.value.replace('username', prompt('What is your %s username?')); return true;"
-                                     (str \' dom-id \') name))}
-          [:input {:type "hidden" :name "identifier" :value url :id dom-id}]
-          [:input {:type "submit" :class "button" :value name}]])
-       [:p "…or, with a user-provided OpenID URL:"]
-       [:form {:method "POST" :action (misc/context-uri req "login")}
-        [:input {:type "text" :name "identifier" :style "width:250px;"}]
-        [:input {:type "submit" :class "button" :value "Login"}]]])
-    [:h3 "Logging out"]
-    [:p [:a {:href (misc/context-uri req "logout")} "Click here to log out"] "."]))
-  (GET "/logout" req
-    (friend/logout* (resp/redirect (str (:context req) "/")))))
 
 
 ;;(slurp "resources/public/html/index.html")
 (defroutes  api
-  (GET "/" req (friend/authorize #{::user} (home-page req)))
+  (GET "/" req (home-page-openid req))
+  (GET "/logout" req
+    (friend/logout* (resp/redirect (str (:context req) "/"))); (home-page-openid req)
+    )
+  (GET "/chess" req (home-page req))
 
   (GET "/health" [name] (mc/find-maps "users"))
   (GET "/entry/:username" [username]
-       (friend/authorize #{::user}  (response (lookup username))))
+       (response (lookup username)))
 
-  (PUT "/entry" {user :body} (friend/authorize #{::user} (response (create-user user))))
-  (DELETE "/delete/entry" {{name :_id} :body} (friend/authorize #{::user} (response (delete-user name))))
-  (GET "/admin" request (friend/authorize #{::admin}
-                                          #_any-code-requiring-admin-authorization
-                                          "Admin page."))
-  (GET "/login" req
-       (h/html5 misc/pretty-head (misc/pretty-body login-form)))
+  ;; (PUT "/entry" {user :body} (friend/authorize #{::user} (response (create-user user))))
+  ;; (DELETE "/delete/entry" {{name :_id} :body} (friend/authorize #{::user} (response (delete-user name))))
+  ;; (GET "/admin" request (friend/authorize #{::admin}
+  ;;                                         #_any-code-requiring-admin-authorization
+  ;;                                         "Admin page."))
+  ;; (GET "/login" req
+  ;;      (h/html5 misc/pretty-head (misc/pretty-body login-form)))
 
-  (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
-  (GET "/role-user" req
-       (friend/authorize #{::user} "You're a user!"))
-  (GET "/role-admin" req
-       (friend/authorize #{::admin} "You're an admin!"))
+  ;; (friend/logout (ANY "/logout" request (ring.util.response/redirect "/")))
+  ;; (GET "/role-user" req
+  ;;      (friend/authorize #{::user} "You're a user!"))
+  ;; (GET "/role-admin" req
+  ;;      (friend/authorize #{::admin} "You're an admin!"))
   (c-route/resources "/"; {:root "META-INF/resources/webjars/foundation/4.0.4/"}
-                     )
+  )
+
   ;; (c-core/context "/user" request
   ;;    (friend/wrap-authorize user-routes #{::user ::admin}))
 
@@ -232,7 +235,7 @@
 (def app
   (->
    (friend/authenticate
-              routes
+              api
               {:allow-anon? true
                ;;:login-uri "/login"
                :default-landing-uri "/"
