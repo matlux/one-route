@@ -240,6 +240,9 @@
                        :join? false
                        :open-browser? false}))
 
+(defn -main []
+  (start-server))
+
 ;;(or page)
 
 
