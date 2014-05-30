@@ -74,6 +74,40 @@
   (GET "/entry/:query" [query] (response (lookup query)))
 )
 
+(defn srp-deploy-page [req] (h/html5
+   misc/pretty-head
+   (misc/pretty-body
+    [:h1 "SRP Deploy Tool"]
+    [:table {:align "center" :border "1" :cellpadding "1" :cellspacing "1" :style "width: 500px; "}
+     [:tbody
+      [:tr
+       [:td "revision"]
+       [:td [:select {:id "revision" :size "5"}
+             [:option {:value "10"} "rev-10"]
+             [:option {:value "20"} "rev-20"]
+             [:option {:value "30"} "rev-30"]
+             ]]
+       [:td [:a {:href "http://google.com"} "Add/Edit Revision"]]]
+      [:tr
+       [:td "Env"]
+       [:td [:select {:id "env" :size "5"}
+             [:option {:value "dev1-GB"} "dev1-GB"]
+             [:option {:value "uat-GB"} "uat-GB"]
+             [:option {:value "dev3-GB"} "dev3-GB"]
+             ]]
+       [:td [:a {:href "http://google.com"} "Add/Edit Revision"]]]
+      [:tr
+       [:td "App"]
+       [:td [:select {:id "app" :size "5"}
+             [:option {:value "10"} "RDF"]
+             [:option {:value "20"} "TOMCAT"]
+             [:option {:value "30"} "rev-30"]
+             ]]
+       [:td [:a {:href "http://google.com"} "Add/Edit Revision"]]]
+      ]]
+    [:p {:style "text-align: center; "}
+     [:button {:id "deploy" :type "submit" :onclick "deploy();" :class "btn btn-success"} "Deploy"]]
+    )))
 
 (defn home-page [req] (h/html5
   misc/pretty-head
@@ -118,7 +152,7 @@
 
 ;;(slurp "resources/public/html/index.html")
 (defroutes  api
-  (GET "/" req (friend/authorize #{::user} (home-page req)))
+  (GET "/" req (friend/authorize #{::user} (srp-deploy-page req)))
 
   (GET "/health" [name] (mc/find-maps "users"))
   (GET "/entry/:username" [username]
