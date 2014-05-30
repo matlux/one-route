@@ -12,4 +12,5 @@
                  [ring/ring-json "0.2.0"]
                  [compojure "1.1.5" :exclusions [[org.clojure/clojure] [ring/ring-core]]]
                  [org.webjars/foundation "4.0.4"]]
-  :local-repo "lib")
+  :local-repo "lib"
+  :main one-route.core)

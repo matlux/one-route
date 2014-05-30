@@ -31,8 +31,8 @@
 (def users {"root" {:username "root"
                     :password (creds/hash-bcrypt "admin")
                     :roles #{::admin}}
-            "jane" {:username "jane"
-                    :password (creds/hash-bcrypt "user")
+            "noam" {:username "noam"
+                    :password (creds/hash-bcrypt "password")
                     :roles #{::user}}})
 
 ;; (def db (atom [{:_id "steve" :email "steves@mail.com"}
@@ -174,6 +174,9 @@
   (server/serve #'app {:port 8070
                        :join? false
                        :open-browser? false}))
+
+(defn -main []
+  (start-server))
 
 ;;(or page)
 
