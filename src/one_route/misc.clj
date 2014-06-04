@@ -78,7 +78,22 @@
 	error: function(jqXHR, textStatus, errorThrown) { $('#addEntryResult').text(textStatus + \" \" + errorThrown); }
 
             })
-        }")
+        }
+        function deploy() {
+            $.ajax({
+                url: '/deploy',
+                data: {_id: $('#env').val(), env: $('#env').val(),
+                       revision: $('#revision').val(),
+                       app: $('#app').val()},
+
+                        contentType: 'application/json',
+        type: 'GET',
+        success: function(data) { $('#addEntryResult').text(JSON.stringify(data)); },
+	error: function(jqXHR, textStatus, errorThrown) { $('#addEntryResult').text(textStatus + \" \" + errorThrown); }
+
+            })
+        }
+")
 
 (def pretty-head
   [:head [:link {:href "/css/normalize.css" :rel "stylesheet" :type "text/css"}]

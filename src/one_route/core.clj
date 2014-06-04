@@ -8,6 +8,7 @@
             [compojure.route :as c-route]
             [ring.server.standalone :as server]
             [ring.middleware.json :as ring-json]
+            ;;[ring.middleware.params :as ring-params]
             [ring.util.response :as resp]
             [monger.core :as mg]
             [monger.collection :as mc]
@@ -107,7 +108,14 @@
       ]]
     [:p {:style "text-align: center; "}
      [:button {:id "deploy" :type "submit" :onclick "deploy();" :class "btn btn-success"} "Deploy"]]
+    [:hr]
+   [:pre {:id "addEntryResult"}]
     )))
+
+(defn srp-deploy [{params :query-params :as req}]
+  (do
+    (println req)
+    (response params)))
 
 (defn home-page [req] (h/html5
   misc/pretty-head
@@ -153,6 +161,7 @@
 ;;(slurp "resources/public/html/index.html")
 (defroutes  api
   (GET "/" req (friend/authorize #{::user} (srp-deploy-page req)))
+  (GET "/deploy" req (friend/authorize #{::user} (srp-deploy req)))
 
   (GET "/health" [name] (mc/find-maps "users"))
   (GET "/entry/:username" [username]
@@ -198,7 +207,7 @@
       (wrap-reload '(one-route.core))
       (ring-json/wrap-json-body {:keywords? true})
       (ring-json/wrap-json-response)
-      ))
+     ))
 
 
 
