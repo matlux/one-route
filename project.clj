@@ -9,6 +9,7 @@
                  [ring-server "0.2.8" :exclusions [[org.clojure/clojure]
                                                    [ring]]]
                  [ring/ring-json "0.2.0"]
+                 [http-kit "2.0.0"]
                  [compojure "1.1.5" :exclusions [[org.clojure/clojure] [ring/ring-core]]]]
   :local-repo "lib"
   :main one-route.core)

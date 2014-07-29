@@ -1,6 +1,7 @@
 (ns one-route.core
   (:use [ring.middleware.reload]
-        [ring.util.response])
+        [ring.util.response]
+        [org.httpkit.server])
   (:require [compojure.handler :as handler]
             [compojure.core
              :as c-core
@@ -35,7 +36,10 @@
                        :open-browser? false}))
 
 (defn -main []
-  (start-server))
+  (run-server (var app) {:port 8080}))
+
+
+
 
 ;;(def server (start-server))
 
