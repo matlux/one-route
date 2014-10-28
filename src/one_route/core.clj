@@ -8,7 +8,12 @@
              :refer [defroutes GET POST PUT DELETE HEAD OPTIONS PATCH ANY]]
             [compojure.route :as c-route]
             [ring.server.standalone :as server]
-            [ring.middleware.json :as ring-json])
+            [ring.middleware.json :as ring-json]
+            [ring.middleware.params :as ring-params]
+            [ring.middleware.keyword-params :as keyword-params]
+            [ring.middleware.nested-params :as nested-params]
+            [ring.middleware.session :as session]
+            [cemerick.drawbridge :as drawbridge])
   (:gen-class))
 
 (def user-table (atom [{:name "mathieu" :team "SRP"}
@@ -21,6 +26,20 @@
   (PUT "/entry" {newuser :body} (response (do (println "added" newuser) (swap! user-table (fn [u] (conj u newuser))) @user-table)))
   (c-route/resources "/"))
 
+
+(def drawbridge-handler
+  (-> (cemerick.drawbridge/ring-handler)
+      (keyword-params/wrap-keyword-params)
+      (nested-params/wrap-nested-params)
+      (ring-params/wrap-params)
+      (session/wrap-session)))
+
+(defn wrap-drawbridge [handler]
+  (fn [req]
+    (if (= "/repl" (:uri req))
+      (drawbridge-handler req)
+      (handler req))))
+
 ;;
 (def app
   (->
@@ -28,7 +47,8 @@
     (handler/api)
     (wrap-reload '(one-route.core))
     (ring-json/wrap-json-body {:keywords? true})
-    (ring-json/wrap-json-response)))
+    (ring-json/wrap-json-response)
+    (wrap-drawbridge)))
 
 (defn start-server []
   (server/serve (var app) {:port 8070
