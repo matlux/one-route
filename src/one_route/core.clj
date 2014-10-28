@@ -13,7 +13,9 @@
             [ring.middleware.keyword-params :as keyword-params]
             [ring.middleware.nested-params :as nested-params]
             [ring.middleware.session :as session]
-            [cemerick.drawbridge :as drawbridge])
+            [ring.middleware.basic-authentication :as ring-basic]
+            [cemerick.drawbridge :as drawbridge]
+            )
   (:gen-class))
 
 (def user-table (atom [{:name "mathieu" :team "SRP"}
@@ -34,11 +36,16 @@
       (ring-params/wrap-params)
       (session/wrap-session)))
 
-(defn wrap-drawbridge [handler]
-  (fn [req]
-    (if (= "/repl" (:uri req))
-      (drawbridge-handler req)
-      (handler req))))
+(defn authenticated? [name pass]
+  (= [name pass] [(System/getenv "AUTH_USER") (System/getenv "AUTH_PASS")]))
+
+ (defn wrap-drawbridge [handler]
+   (fn [req]
+    (let [handler (if (= "/repl" (:uri req))
+                    (ring-basic/wrap-basic-authentication
+                     drawbridge-handler authenticated?)
+                    handler)]
+       (handler req))))
 
 ;;
 (def app
@@ -51,12 +58,10 @@
     (wrap-drawbridge)))
 
 (defn start-server []
-  (server/serve (var app) {:port 8070
-                           :join? false
-                       :open-browser? false}))
+  (run-server (var app) {:port 8080}))
 
 (defn -main []
-  (run-server (var app) {:port 8080}))
+  (start-server))
 
 
 
